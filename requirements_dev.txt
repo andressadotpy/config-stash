@@ -1,0 +1,17 @@
+# style check
+autopep8
+black
+flake8
+pre-commit
+pre-commit-hooks
+pyupgrade
+reorder-python-imports
+
+# testing
+pytest
+pytest-cov
+coverage
+
+# tools
+ipython
+ipdb
