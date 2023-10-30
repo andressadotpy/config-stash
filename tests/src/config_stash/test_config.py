@@ -102,15 +102,15 @@ def temp_config_file(tmpdir):
     return str(filepath)
 
 
-@patch('src.config_stash.config.Config.load_from_env')
-@patch('src.config_stash.config.Config.load_from_vault')
-def test_load_from_yaml_file_envvars_prefixed_with_ENV(mock_load_from_vault, mock_load_from_env, temp_config_file):
+@patch('src.config_stash.config.Config._load_vault_secret')
+@patch('src.config_stash.config.Config._load_env_variable')
+def test_load_from_yaml_file_envvars_prefixed_with_ENV(mock_load_env_variable, mock_load_vault_secret, temp_config_file):
     config = Config()
 
     config.load_from_yaml_file(temp_config_file)
 
-    mock_load_from_vault.assert_called_once_with("vault_secret_path", "vault_secret_key", "db_pass")
-    mock_load_from_env.assert_called_once_with("USER", "username")
+    mock_load_vault_secret.assert_called_once_with("VAULT.vault_secret_path.vault_secret_key", "db_pass")
+    mock_load_env_variable.assert_called_once_with("ENV.USER", "username")
     
     
 def test_load_envvars_from_non_existent_file():
