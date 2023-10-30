@@ -45,16 +45,31 @@ class Config(dict):
         try:
             with open(filepath) as file:
                 data = yaml.safe_load(file)
-                for key, value in data.items():
-                    if isinstance(value, str):
-                        if value.startswith("ENV."):
-                            self._load_env_variable(value, key)
-                        elif value.startswith("VAULT."):
-                            self._load_vault_secret(value, key)
-                        elif key not in self:
-                            self[key] = value
+                self._load_yaml_data(data)
         except (FileNotFoundError, ValueError, yaml.YAMLError) as e:
             raise type(e)(f"Error loading data from file: '{filepath}'") from e
+        
+    def _load_yaml_data(self, data: dict, parent_key=''):
+        for key, value in data.items():
+            if isinstance(value, dict):
+                nested_key = f'{parent_key}.{key}' if parent_key else key
+                self._load_yaml_data(value, nested_key)
+                self._set_nested_dict(nested_key, value)
+            else:
+                if isinstance(value, str):
+                    if value.startswith("ENV."):
+                        self._load_env_variable(value, key)
+                    elif value.startswith("VAULT."):
+                        self._load_vault_secret(value, key)
+                    elif key not in self:
+                        self[key] = value
+                        
+    def _set_nested_dict(self, key: str, value: dict):
+        keys = key.split('.')
+        current_dict = self
+        for k in keys[:-1]:
+            current_dict = current_dict.setdefault(k, {})
+        current_dict[keys[-1]] = value
 
     def load_from_vault(
         self,
