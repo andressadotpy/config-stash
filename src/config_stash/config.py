@@ -1,10 +1,11 @@
-import yaml
 import os
-from typing import Any, List
+from typing import Any
+from typing import List
+
+import yaml
 
 
 class Config(dict):
-
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
@@ -27,12 +28,12 @@ class Config(dict):
     def load_prefixed_env_vars(self, allowed_prefixes: List[str] = None):
         if not allowed_prefixes:
             raise TypeError("You should provide the prefixes of the variables that should be loaded.")
-        
+
         for key in os.environ.keys():
             for prefix in allowed_prefixes:
                 if key.startswith(prefix) and key not in self:
                     self[key] = os.environ.get(key)
-                    
+
     def _load_env_variable(self, yaml_value: str, yaml_key: str):
         env_key = yaml_value.strip("ENV.")
         self.load_from_env(env_key, yaml_key)
@@ -48,7 +49,7 @@ class Config(dict):
                 self._load_yaml_data(data)
         except (FileNotFoundError, ValueError, yaml.YAMLError) as e:
             raise type(e)(f"Error loading data from file: '{filepath}'") from e
-        
+
     def _load_yaml_data(self, data: dict, parent_key=''):
         for key, value in data.items():
             if isinstance(value, dict):
@@ -63,7 +64,7 @@ class Config(dict):
                         self._load_vault_secret(value, key)
                     elif key not in self:
                         self[key] = value
-                        
+
     def _set_nested_dict(self, key: str, value: dict):
         keys = key.split('.')
         current_dict = self

@@ -1,7 +1,9 @@
-import yaml
 import os
+from unittest.mock import MagicMock
+from unittest.mock import patch
+
 import pytest
-from unittest.mock import MagicMock, patch
+import yaml
 
 from src.config_stash.config import Config
 
@@ -104,7 +106,9 @@ def temp_config_file(tmpdir):
 
 @patch('src.config_stash.config.Config._load_vault_secret')
 @patch('src.config_stash.config.Config._load_env_variable')
-def test_load_from_yaml_file_envvars_prefixed_with_ENV(mock_load_env_variable, mock_load_vault_secret, temp_config_file):
+def test_load_from_yaml_file_envvars_prefixed_with_ENV(
+    mock_load_env_variable, mock_load_vault_secret, temp_config_file
+):
     config = Config()
 
     config.load_from_yaml_file(temp_config_file)
@@ -112,26 +116,27 @@ def test_load_from_yaml_file_envvars_prefixed_with_ENV(mock_load_env_variable, m
     mock_load_vault_secret.assert_called_once_with("VAULT.vault_secret_path.vault_secret_key", "db_pass")
     mock_load_env_variable.assert_called_once_with("ENV.USER", "username")
     assert isinstance(config["cloudaccessdb"], dict)
-    
-    
+    assert config["url"] == "stage"
+
+
 @patch('src.config_stash.config.Config.load_from_env')
 def test_private_method_load_env_variable(mock_load_from_env):
     config = Config()
-    
+
     config._load_env_variable("ENV.USER", "username")
-    
+
     mock_load_from_env.assert_called_once_with("USER", "username")
-    
+
 
 @patch('src.config_stash.config.Config.load_from_vault')
-def test_private_method_load_env_variable(mock_load_from_vault):
+def test_private_method_load_vault_secret(mock_load_from_vault):
     config = Config()
-    
+
     config._load_vault_secret("VAULT.vault_secret_path.vault_secret_key", "db_pass")
-    
+
     mock_load_from_vault.assert_called_once_with("vault_secret_path", "vault_secret_key", "db_pass")
-    
- 
+
+
 @pytest.fixture
 def temp_nested_data_config_file(tmpdir):
     config_data = {
@@ -150,38 +155,38 @@ def temp_nested_data_config_file(tmpdir):
 
 def test_nested_keys_from_yaml(temp_nested_data_config_file):
     config = Config()
-    
+
     config.load_from_yaml_file(temp_nested_data_config_file)
-    
+
     assert "cloudaccessdb" in config.keys()
     assert isinstance(config["cloudaccessdb"], dict)
     assert config.get("cloudaccessdb").get("prefix_name") == "cloud_db"
     assert config.get("cloudaccessdb").get("user") == "cloud_access_user"
     assert config.get("cloudaccessdb").get("host") == "dbproxy01.dba-001.prod.iad2.dc.redhat.com"
-    
+
 
 def test_multiple_nested_keys_from_yaml(temp_nested_data_config_file):
     config = Config()
-    
+
     config.load_from_yaml_file(temp_nested_data_config_file)
-    
+
     assert "cloudaccessdb" in config.keys()
     assert isinstance(config["cloudaccessdb"], dict)
     assert config.get("cloudaccessdb").get("prefix_name") == "cloud_db"
     assert config.get("cloudaccessdb").get("user") == "cloud_access_user"
     assert config.get("cloudaccessdb").get("host") == "dbproxy01.dba-001.prod.iad2.dc.redhat.com"
-    
+
     assert "cloud_access_db" in config.keys()
     assert isinstance(config["cloud_access_db"], dict)
     assert config.get("cloud_access_db").get("port") == 2317
-    assert config.get("cloud_access_db").get("dbName") == "cloud_access" 
-    
-    
+    assert config.get("cloud_access_db").get("dbName") == "cloud_access"
+
+
 def test_load_envvars_from_non_existent_file():
     config = Config()
     with pytest.raises(FileNotFoundError):
         config.load_from_yaml_file("invalid_filepath.yaml")
-        
+
 
 def test_load_from_vault():
     vault_secret_path = "secret/path"
@@ -195,7 +200,7 @@ def test_load_from_vault():
 
     vault_loader_mock.get_value_from_vault.assert_called_once_with(vault_secret_path, vault_secret_key)
     assert config["secret_key"] == "vault_secret_value"
-    
+
 
 def test_load_from_vault_with_custom_key():
     vault_secret_path = "secret/path"
