@@ -64,6 +64,9 @@ class Config(dict):
                         self._load_vault_secret(value, key)
                     elif key not in self:
                         self[key] = value
+                else:
+                    if key not in self:
+                        self[key] = value
 
     def _set_nested_dict(self, key: str, value: dict):
         keys = key.split('.')

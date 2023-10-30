@@ -180,7 +180,26 @@ def test_multiple_nested_keys_from_yaml(temp_nested_data_config_file):
     assert isinstance(config["cloud_access_db"], dict)
     assert config.get("cloud_access_db").get("port") == 2317
     assert config.get("cloud_access_db").get("dbName") == "cloud_access"
+    
+    
+@pytest.fixture
+def temp_data_with_int_values(tmpdir):
+    config_data = {
+        'port': 2317
+    }
+    filepath = tmpdir.join("config.yaml")
+    with open(filepath, 'w') as file:
+        yaml.safe_dump(config_data, file)
+    return str(filepath)
 
+
+def test_int_values_in_file(temp_data_with_int_values):
+    config = Config()
+
+    config.load_from_yaml_file(temp_data_with_int_values)
+
+    assert config["port"] == 2317
+    
 
 def test_load_envvars_from_non_existent_file():
     config = Config()
