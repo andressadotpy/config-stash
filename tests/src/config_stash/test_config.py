@@ -117,3 +117,47 @@ def test_load_envvars_from_non_existent_file():
     config = Config()
     with pytest.raises(FileNotFoundError):
         config.load_from_yaml_file("invalid_filepath.yaml")
+        
+
+def test_load_from_vault():
+    vault_secret_path = "secret/path"
+    vault_secret_key = "secret_key"
+    vault_loader_mock = MagicMock()
+    vault_loader_mock.get_value_from_vault.return_value = "vault_secret_value"
+
+    config = Config()
+
+    config.load_from_vault(vault_secret_path, vault_secret_key, vault_loader_mock)
+
+    vault_loader_mock.get_value_from_vault.assert_called_once_with(vault_secret_path, vault_secret_key)
+    assert config["secret_key"] == "vault_secret_value"
+    
+
+def test_load_from_vault_with_custom_key():
+    vault_secret_path = "secret/path"
+    vault_secret_key = "secret_key"
+    vault_loader_mock = MagicMock()
+    vault_loader_mock.get_value_from_vault.return_value = "vault_secret_value"
+
+    config = Config()
+
+    config.load_from_vault(vault_secret_path, vault_secret_key, vault_loader_mock, "custom_secret_key")
+
+    vault_loader_mock.get_value_from_vault.assert_called_once_with(vault_secret_path, vault_secret_key)
+    assert config["custom_secret_key"] == "vault_secret_value"
+    
+
+@patch('src.config_stash.config.Config.load_from_env')
+def test_private_method_load_env_variable(mock_load_from_env):
+    config = Config()
+    config._load_env_variable("ENV.USER", "username")
+    
+    mock_load_from_env.assert_called_once_with("USER", "username")
+    
+
+@patch('src.config_stash.config.Config.load_from_vault')
+def test_private_method_load_env_variable(mock_load_from_vault):
+    config = Config()
+    config._load_vault_secret("VAULT.vault_secret_path.vault_secret_key", "db_pass")
+    
+    mock_load_from_vault.assert_called_once_with("vault_secret_path", "vault_secret_key", "db_pass")
