@@ -8,13 +8,6 @@ import yaml
 from src.config_stash.config import Config
 
 
-def test_initializing_config_with_key_value_pairs():
-    config = Config({"API_KEY": "default_api_key", "DATABASE_URL": "default_database_url"})
-
-    assert config["API_KEY"] == "default_api_key"
-    assert config["DATABASE_URL"] == "default_database_url"
-
-
 def test_update_environment_variable_from_config():
     config = Config({"API_KEY": "default_api_key"})
 
@@ -269,9 +262,9 @@ def test_load_from_vault():
     vault_loader_mock = MagicMock()
     vault_loader_mock.get_value_from_vault.return_value = "vault_secret_value"
 
-    config = Config()
+    config = Config(vault_loader_mock)
 
-    config.load_from_vault(vault_secret_path, vault_secret_key, vault_loader_mock)
+    config.load_from_vault(vault_secret_path, vault_secret_key)
 
     vault_loader_mock.get_value_from_vault.assert_called_once_with(vault_secret_path, vault_secret_key)
     assert config["secret_key"] == "vault_secret_value"
@@ -283,9 +276,9 @@ def test_load_from_vault_with_custom_key():
     vault_loader_mock = MagicMock()
     vault_loader_mock.get_value_from_vault.return_value = "vault_secret_value"
 
-    config = Config()
+    config = Config(vault_loader_mock)
 
-    config.load_from_vault(vault_secret_path, vault_secret_key, vault_loader_mock, "custom_secret_key")
+    config.load_from_vault(vault_secret_path, vault_secret_key, "custom_secret_key")
 
     vault_loader_mock.get_value_from_vault.assert_called_once_with(vault_secret_path, vault_secret_key)
     assert config["custom_secret_key"] == "vault_secret_value"

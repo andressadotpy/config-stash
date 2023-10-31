@@ -9,11 +9,11 @@ class Config(dict):
     """
     Custom configuration class that extends the Python dict class.
     This class provides methods to load configuration data from environment variables,
-    YAML files, and vault secrets.
+    YAML files and vault secrets.
 
     Example Usage:
-        # Creating a Config instance
-        config = Config()
+        # Creating a Config instance with optional VaultFetcher instance
+        config = Config(vault_fetcher=VaultFetcher())
 
         # Loading keys from environment variables
         config.load_many_keys_from_env(["ENV_KEY1", "ENV_KEY2"])
@@ -28,8 +28,7 @@ class Config(dict):
         config.load_from_yaml_file("config.yaml")
 
         # Loading a secret from Vault
-        vault_fetcher = VaultFetcher()  # Assuming VaultFetcher is a class with a get_value_from_vault method
-        config.load_from_vault("secret/path", "secret_key", vault_fetcher)
+        config.load_from_vault("secret/path", "secret_key", custom_key_name="custom_key")
 
         # Accessing configuration values
         value1 = config.get("ENV_KEY1")
@@ -41,8 +40,18 @@ class Config(dict):
         config["new_key"] = "new_value"
     """
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, vault_fetcher: Any = None, *args, **kwargs):
+        """
+        Initialize a new Config instance.
+
+        Args:
+            vault_fetcher (Any, optional): An object with a method get_value_from_vault(path, key)
+                to fetch secret values from Vault.
+            *args: Additional positional arguments to pass to the base class constructor.
+            **kwargs: Additional keyword arguments to pass to the base class constructor.
+        """
         super().__init__(*args, **kwargs)
+        self.vault_fetcher = vault_fetcher
 
     def load_many_keys_from_env(self, keys: List[str]):
         """
@@ -154,7 +163,6 @@ class Config(dict):
         self,
         vault_secret_path: str,
         vault_secret_key: str,
-        fetcher: Any,
         custom_key_name: str = None,
     ):
         """
@@ -163,14 +171,13 @@ class Config(dict):
         Args:
             vault_secret_path (str): The path to the secret in Vault.
             vault_secret_key (str): The key of the secret within the specified path.
-            fetcher (Any): An object with a method get_value_from_vault(path, key) to fetch secret values.
             custom_key_name (str, optional): The custom key name to use in the Config object.
                 If not provided, the vault_secret_key is used as the key name.
 
         Raises:
             KeyError: If the specified Vault secret path or key is not found.
         """
-        vault_secret_value = fetcher.get_value_from_vault(vault_secret_path, vault_secret_key)
+        vault_secret_value = self.vault_fetcher.get_value_from_vault(vault_secret_path, vault_secret_key)
 
         if custom_key_name and custom_key_name not in self:
             self[custom_key_name] = vault_secret_value
