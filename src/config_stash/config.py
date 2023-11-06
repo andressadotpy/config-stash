@@ -134,7 +134,7 @@ class Config(dict):
         except (FileNotFoundError, ValueError, yaml.YAMLError) as e:
             raise type(e)(f"Error loading data from file: '{filepath}'") from e
 
-    def _load_yaml_data(self, data: dict, parent_key=''):
+    def _load_yaml_data(self, data: dict, parent_key: str = ''):
         for key, value in data.items():
             if isinstance(value, dict):
                 nested_key = f'{parent_key}.{key}' if parent_key else key
