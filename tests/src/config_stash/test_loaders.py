@@ -247,3 +247,13 @@ def test_load_envvars_from_non_existent_file():
     loader = YamlLoader()
     with pytest.raises(FileNotFoundError):
         loader.load("invalid_filepath.yaml")
+        
+
+def test_vault_loader():
+    vault_fetcher_mock = MagicMock()
+    vault_fetcher_mock.get_value_from_vault.return_value = "vault_secret_value"
+    
+    loader = VaultLoader()
+    result = loader.load("vault/secret/path", "vault_secret_key", vault_fetcher_mock)
+    
+    assert result == "vault_secret_value"
