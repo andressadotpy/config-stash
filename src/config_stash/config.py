@@ -19,7 +19,7 @@ class Config(dict):
         self.update(values)
 
     def load_from_env(self, key: str, custom_key_name: str = None, loader: Any = EnvLoader()):
-        value = loader.loader(key)
+        value = loader.load(key)
         if not custom_key_name:
             self[key] = value
         else:
