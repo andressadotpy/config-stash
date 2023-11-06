@@ -124,19 +124,22 @@ class VaultFetcherInterface(ABC):
 The value prefixed with `ENV` must be dot separated and followed by the environment variable key that should be loaded.
 
 # Config.load_from_vault(vault_secret_path: str, vault_secret_key: str, fetcher: Any, custom_key_name: str = None)
-Load a secret value from Vault and store it in the Config object.
+
+Load a secret value from Vault and store it in the `Config`` object.
 
 To use this method, `Config` object must also be initialized with a `VaultFetcher` (see example above).
 
 - **Args**:
-    - `vault_secret_path (str)`: The path to the secret in Vault.
-    - `vault_secret_key (str)`: The key of the secret within the specified path.
-    - `custom_key_name (str, optional)`: The custom key name to use in the Config object. If not provided, the vault_secret_key is used as the key name.
+  - `vault_secret_path (str)`: The path to the secret in Vault.
+  - `vault_secret_key (str)`: The key of the secret within the specified path.
+  - `custom_key_name (str, optional)`: The custom key name to use in the Config object. If not provided, the vault_secret_key is used as the key name.
 - **Raises**:
-    - `KeyError`: If the specified Vault secret path or key is not found.
+  - `KeyError`: If the specified Vault secret path or key is not found.
 
-# Config.__setitem__(key: str, value: str)
-Override the __setitem__ method to update both the Config object and the corresponding environment variable.
+# Config.\_\_setitem\_\_(key: str, value: str)
+
+Override the \_\_setitem\_\_() method to update both the `Config` object and the corresponding environment variable.
+
 - **Args**:
-    - `key (str)`: The key to set.
-    - `value (str)`: The value to associate with the key.
+  - `key (str)`: The key to set.
+  - `value (str)`: The value to associate with the key.
