@@ -1,10 +1,11 @@
 import os
-import yaml
-
-from abc import ABC, abstractmethod
+from abc import ABC
+from abc import abstractmethod
 from typing import Any
-from typing import List
 from typing import Dict
+from typing import List
+
+import yaml
 
 
 class BaseLoader(ABC):
@@ -14,20 +15,20 @@ class BaseLoader(ABC):
         Abstract method for loading data from a specific source.
         """
         pass
-    
+
 
 class EnvLoader(BaseLoader):
     def load(self, key: str) -> Any:
         """
         Load a key from an environment variable.
-        
+
         Raises:
             KeyError: If the specified environment variable is not set.
         """
         if key not in os.environ.keys():
             raise KeyError(f"Environment variable {key} isn't set")
         return os.environ.get(key)
-    
+
 
 class PrefixedEnvLoader(BaseLoader):
     def load(self, prefixes: List[str] = None) -> Dict[str, Any]:
@@ -45,16 +46,16 @@ class PrefixedEnvLoader(BaseLoader):
         """
         if not prefixes:
             raise TypeError("You should provide the prefixes of the variables that should be loaded.")
-        
+
         envvars = dict()
         for key in os.environ.keys():
             for prefix in prefixes:
                 if key.startswith(prefix):
                     envvars[key] = os.environ.get(key)
-                    
+
         return envvars
-    
-    
+
+
 class MultipleEnvLoader(BaseLoader):
     def load(self, keys: List[str]) -> Dict[str, Any]:
         """
@@ -74,24 +75,45 @@ class MultipleEnvLoader(BaseLoader):
             if key not in os.environ.keys():
                 raise KeyError(f"Environment variable {key} isn't set")
             envvars[key] = os.environ.get(key)
-            
+
         return envvars
-    
-    
+
+
 class VaultLoader(BaseLoader):
     def load(self, vault_secret_path: str, vault_secret_key: str, vault_fetcher: Any) -> Any:
+        """
+        Load configuration data from Vault.
+
+        Args:
+            vault_secret_path (str): The path to the Vault secret.
+            vault_secret_key (str): The key of the secret within the specified path.
+            vault_fetcher (Any): An object implementing a get_value_from_vault() method
+                                 to fetch secrets from Vault.
+
+        Raises:
+            AttributeError: Raised if vault_fetcher is not provided.
+
+        Returns:
+            Any: The secret value fetched from Vault.
+        """
         if not vault_fetcher:
             raise AttributeError("Needs a vault fetcher object.")
         return vault_fetcher.get_value_from_vault(vault_secret_path, vault_secret_key)
-    
-    
+
+
 class YamlLoader(BaseLoader):
     def __init__(self):
         self.data = dict()
-    
+
     def load(self, filepath: str, vault_fetcher: Any = None) -> Dict[Any, Any]:
         """
         Load configuration data from a YAML file.
+        The YAML file can use prefixes for the values:
+            - ENV. to load from environment variables
+            - VAULT. to load from Vault.
+            Example:
+                db_pass: VAULT.vault_secret_path.vault_secret_key
+                username: ENV.USER
 
         Args:
             filepath (str): The path to the YAML file containing the configuration data.
@@ -107,30 +129,29 @@ class YamlLoader(BaseLoader):
         try:
             with open(filepath) as file:
                 data = yaml.safe_load(file)
-                self._load_yaml_data(data, vault_fetcher)
+                self._load_yaml_data(data, vault_fetcher=vault_fetcher)
         except (FileNotFoundError, ValueError, yaml.YAMLError) as e:
             raise type(e)(f"Error loading data from file: '{filepath}'") from e
-        
+
         return self.data
-        
+
     def _load_yaml_data(self, data: dict, parent_key: str = '', vault_fetcher: Any = None):
         for key, value in data.items():
             if isinstance(value, dict):
                 nested_key = f'{parent_key}.{key}' if parent_key else key
-                self._load_yaml_data(value, nested_key)
+                self._load_yaml_data(value, nested_key, vault_fetcher)
                 self._set_nested_dict(nested_key, value)
+            elif isinstance(value, str):
+                if value.startswith("ENV."):
+                    self._load_env_variable(value, key)
+                elif value.startswith("VAULT."):
+                    self._load_vault_secret(value, key, vault_fetcher)
+                elif key not in self.data:
+                    self.data[key] = value
             else:
-                if isinstance(value, str):
-                    if value.startswith("ENV."):
-                        self._load_env_variable(value, key)
-                    elif value.startswith("VAULT."):
-                        self._load_vault_secret(value, key, vault_fetcher)
-                    elif key not in self.data:
-                        self.data[key] = value
-                else:
-                    if key not in self.data:
-                        self.data[key] = value
-                        
+                if key not in self.data.keys():
+                    self.data[key] = value
+
     def _set_nested_dict(self, key: str, value: dict):
         keys = key.split('.')
         current_dict = self.data
@@ -143,8 +164,7 @@ class YamlLoader(BaseLoader):
         value = loader.load(env_key)
         self.data[yaml_key] = value
 
-    def _load_vault_secret(self, yaml_value: str, yaml_key: str, vault_fetcher: Any = None, loader: Any = VaultLoader()):
+    def _load_vault_secret(self, yaml_value: str, yaml_key: str, vault_fetcher: Any, loader: Any = VaultLoader()):
         vault_path, vault_key = yaml_value.strip("VAULT.").split(".")
         value = loader.load(vault_path, vault_key, vault_fetcher)
         self.data[yaml_key] = value
-        

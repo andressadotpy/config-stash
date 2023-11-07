@@ -25,7 +25,7 @@ config.load_from_yaml_file("config.yaml")
 
 # Loading a secret from Vault
 vault_fetcher = VaultFetcher()  # Assuming VaultFetcher is a class with a get_value_from_vault method
-config.load_from_vault("secret/path", "secret_key", vault_fetcher)
+config.load_from_vault("secret/path", "secret_key")
 
 # Accessing configuration values
 value1 = config.get("ENV_KEY1")
@@ -125,7 +125,7 @@ The value prefixed with `ENV` must be dot separated and followed by the environm
 
 # Config.load_from_vault(vault_secret_path: str, vault_secret_key: str, fetcher: Any, custom_key_name: str = None)
 
-Load a secret value from Vault and store it in the `Config`` object.
+Load a secret value from Vault and store it in the `Config` object.
 
 To use this method, `Config` object must also be initialized with a `VaultFetcher` (see example above).
 
