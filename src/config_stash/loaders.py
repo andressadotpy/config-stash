@@ -73,7 +73,7 @@ class MultipleEnvLoader(BaseLoader):
         envvars = dict()
         for key in keys:
             if key not in os.environ.keys():
-                raise KeyError(f"Environment variable {key} isn't set")
+                raise KeyError(f"Environment variable `{key}` isn't set")
             envvars[key] = os.environ.get(key)
 
         return envvars
