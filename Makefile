@@ -6,7 +6,7 @@ test:
 	pytest --capture=tee-sys
 
 coverage:
-	pytest --cov
+	pytest --cov-report term-missing --cov=config_stash tests/
 
 lint:
 	flake8 --count --verbose tests
